@@ -4,9 +4,19 @@ const { doSomeHeavyStuff } = require('./util');
 const app = express();
 const PORT = 3000;
 
+// prometheus client 
+const client = require('prom-client');
+const collectDefaultMetrics = client.collectDefaultMetrics
+
+collectDefaultMetrics({
+    register: client.register,
+})
+
 const errorHandler = (err, req, res, next) => {
     console.error(err.stack);
-    res.status(500).json({ message: err.message });
+    res.status(500).json({
+        message: err.message
+    });
 }
 
 app.get('/', (req, res) => {
@@ -25,6 +35,14 @@ app.get('/slow', async (req, res, next) => {
         next(err);
     }
 });
+
+app.get('/metrics', async (req, res) => {
+    res.set('Content-Type', client.register.contentType)
+    const metrics = await client.register.metrics()
+
+    res.send(metrics)
+})
+
 
 app.use(errorHandler);
 
